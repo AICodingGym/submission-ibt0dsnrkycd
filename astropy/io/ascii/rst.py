@@ -62,5 +62,9 @@ class RST(FixedWidth):
 
     def write(self, lines):
         lines = super().write(lines)
-        lines = [lines[1]] + lines + [lines[1]]
+        # Position line (=====) is at index len(header_rows); with one header it's lines[1]
+        header_rows = getattr(self.data, "header_rows", ["name"])
+        sep_index = len(header_rows)
+        sep_line = lines[sep_index]
+        lines = [sep_line] + lines + [sep_line]
         return lines
