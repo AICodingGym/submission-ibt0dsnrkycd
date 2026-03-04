@@ -1,0 +1,10 @@
+import astropy.units as u
+
+class PoC(object):
+    @u.quantity_input
+    def __init__(self, voltage: u.V) -> None:
+        pass
+
+if __name__ == '__main__':
+    poc = PoC(1.*u.V)
+    print("OK: PoC(1.*u.V) succeeded")
