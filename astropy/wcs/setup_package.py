@@ -10,7 +10,21 @@ from os.path import join
 
 import numpy
 from setuptools import Extension
-from setuptools.dep_util import newer_group
+try:
+    from setuptools.dep_util import newer_group
+except ImportError:
+    try:
+        from distutils.dep_util import newer_group
+    except ImportError:
+        def newer_group(sources, target, missing="error"):
+            """Simple replacement: rebuild if target doesn't exist or any source is newer."""
+            if not os.path.exists(target):
+                return True
+            target_mtime = os.stat(target).st_mtime
+            for source in sources:
+                if os.path.exists(source) and os.stat(source).st_mtime > target_mtime:
+                    return True
+            return False
 
 from extension_helpers import get_compiler, import_file, pkg_config, write_if_different
 
