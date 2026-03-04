@@ -636,13 +636,31 @@ class Quantity(np.ndarray):
         result : `~astropy.units.Quantity`
             Results of the ufunc, with the unit set properly.
         """
+        # Only work with recognized types (Quantity, ndarray, Column).
+        # Return NotImplemented for duck types so they can use reflected
+        # operators (see numpy __array_ufunc__ protocol and issue #13977).
+        out = kwargs.get("out", None)
+        all_io = list(inputs)
+        if out is not None:
+            all_io.extend(out if isinstance(out, tuple) else [out])
+        _column_cls = None
+        for io in all_io:
+            if isinstance(io, np.ndarray):
+                continue
+            if _column_cls is None:
+                try:
+                    from astropy.table import Column as _column_cls
+                except ImportError:
+                    _column_cls = type(None)
+            if not isinstance(io, _column_cls):
+                return NotImplemented
+
         # Determine required conversion functions -- to bring the unit of the
         # input to that expected (e.g., radian for np.sin), or to get
         # consistent units between two inputs (e.g., in np.add) --
         # and the unit of the result (or tuple of units for nout > 1).
         converters, unit = converters_and_unit(function, method, *inputs)
 
-        out = kwargs.get("out", None)
         # Avoid loop back by turning any Quantity output into array views.
         if out is not None:
             # If pre-allocated output is used, check it is suitable.
