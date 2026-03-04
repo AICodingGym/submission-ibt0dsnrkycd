@@ -4,6 +4,7 @@
 
 
 import inspect
+import re
 import types
 import importlib
 from distutils.version import LooseVersion
@@ -88,6 +89,24 @@ def resolve_name(name, *additional_parts):
     return ret
 
 
+def _strip_version_suffix(version):
+    """
+    Strip non-numerical suffixes (e.g. dev, rc1) from version string to avoid
+    TypeError when comparing with LooseVersion (see Python bug #30272).
+    """
+    version = str(version).strip()
+    parts = []
+    for part in version.split('.'):
+        if part.isdigit():
+            parts.append(part)
+        else:
+            match = re.match(r'^(\d+)', part)
+            if match:
+                parts.append(match.group(1))
+            break
+    return '.'.join(parts) if parts else version
+
+
 def minversion(module, version, inclusive=True, version_path='__version__'):
     """
     Returns `True` if the specified Python module satisfies a minimum version
@@ -139,6 +158,8 @@ def minversion(module, version, inclusive=True, version_path='__version__'):
     else:
         have_version = resolve_name(module.__name__, version_path)
 
+    have_version = _strip_version_suffix(have_version)
+    version = _strip_version_suffix(version)
     if inclusive:
         return LooseVersion(have_version) >= LooseVersion(version)
     else:
